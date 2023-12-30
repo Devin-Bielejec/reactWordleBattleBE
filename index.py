@@ -109,6 +109,12 @@ def getEmail():
 
 def submitGuess():
     #Check if both players have either gotten the word or ran out of guesses, then set completedDate of the game to the current date
+    gameID = request.json.get("gameID")
+    email = request.json.get("email")
+
+    #Get word for this user via gameID and email
+    #Update the guess for this email {email, guess, guessNumber, gameID}
+    #Confirm if 
     return True
 
 @app.route("/verifyWord", methods=["POST"])
