@@ -1,20 +1,13 @@
 from flask import Flask, g, request, send_file, send_from_directory, Response, jsonify
-from flask_restful import Resource, Api, reqparse
-from requests import put, get
 import requests
 import sys
-sys.path.insert(0, "./creatingWorksheets")
-from documentCreation import createVersions
 import os
 import json
-from flask_jwt_extended import JWTManager
-from flask_jwt_extended import create_access_token
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from flask_bcrypt import Bcrypt
 from pymongo import MongoClient
 from dotenv import load_dotenv
 load_dotenv()
-import pprint
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -42,7 +35,7 @@ def login():
     #Check if hash from db doesn't match with current password given
     hashFromDB = db.users.find_one({"email": email})["password"]
     if not bcrypt.check_password_hash(hashFromDB, password):
-        return jsonify({"msg": "Bad email or password"}), 401
+        return jsonify({"message": "Bad email or password"}), 401
 
     access_token = create_access_token(identity=email)
     return jsonify(access_token=access_token)
@@ -51,14 +44,17 @@ def login():
 def register():
     email = request.json.get("email", None)
     password = request.json.get("password", None)
+    screenName = request.json.get("screenName", "")
+
     passwordHash = bcrypt.generate_password_hash(password).decode('utf-8') 
     #Check if email is already taken
     if not db.users.find_one({"email": email}):
-        db.users.insert_one({"email": email, "password": passwordHash}).inserted_id
+        db.users.insert_one({"screenName": screenName, "email": email, "password": passwordHash, "friends": []}).inserted_id
         access_token = create_access_token(identity=email)
-        return jsonify(access_token=access_token)
+
+        return jsonify(access_token=access_token), 200
     else:
-        return jsonify({"msg": "Email already exists"}), 401
+        return jsonify({"message": "Email already exists"}), 401
 
 if __name__ == '__main__':
     app.run(debug=True)
