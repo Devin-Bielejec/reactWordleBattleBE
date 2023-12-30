@@ -56,5 +56,71 @@ def register():
     else:
         return jsonify({"message": "Email already exists"}), 401
 
+@app.route("/createGame", methods=["POST"])
+def createGame():
+    email1 = request.json.get("email1")
+    email2 = request.json.get("email2")
+    word = request.json.get("word")
+    if not (email1 and email2 and word):
+        return jsonify({"message": "Need word and both emails"}), 401
+    
+    #Mongo will create and inserted_id which is unique
+    #Word2 is for email2
+    db.games.insert_one({"email1": email1, "email2": email2, "word2": word, "word1": "", completedDate: ""})
+
+    return jsonify({"message": "Game Created!"}), 200
+
+@app.route("/getGames", methods=["GET"])
+def getGames():
+    #Get only open games
+    email = request.json.get("email")
+
+    games = db.games.find({completedDate: ""})
+
+    return jsonify({games}), 200
+
+@app.route("/acceptGame", methods=["POST"])
+def acceptGame():
+    email = request.json.get("email")
+    word = request.json.get("word")
+    #GameID would have come from getGames and user clicked on game etc
+    gameID = request.json.get("gameID")
+
+    if not (email and word and gameID):
+        return jsonify({"message": "Need word, gameID, and email please"}), 401
+    
+    #Update game by gameID
+    db.games.update_one({
+        {"inserted_id":gameID},
+        {"word1": word}
+    })
+
+    return jsonify({"message": "Game Accepted"}), 200
+
+#Try to find the email of a user to start a game with them
+@app.route("/getEmail", methods=["POST"])
+def getEmail():
+    email = request.json.get("email")
+
+    emails = db.users.find({"email": email})
+    if not emails:
+        return jsonify({"message": "No user with that Email"}), 401
+    return jsonify({"message": "Email Found!"}), 200
+
+def submitGuess():
+    #Check if both players have either gotten the word or ran out of guesses, then set completedDate of the game to the current date
+    return True
+
+@app.route("/verifyWord", methods=["POST"])
+def verifyWord():
+    word = request.json.get("word")
+    
+    res = requests.get("https://api.dictionaryapi.dev/api/v2/entries/en/" + word)
+    response = json.loads(res.text)
+    print(response)
+    if res:
+        return jsonify({"message": "It's a word!", "data": response})
+    return jsonify({"message": "It is not a word!"})
+
 if __name__ == '__main__':
     app.run(debug=True)
